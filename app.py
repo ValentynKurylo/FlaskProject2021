@@ -1,14 +1,33 @@
-from flask import Flask, request, jsonify
+
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
-from config import DATABASE_URI
-from models import Base,  Worker
 from sqlalchemy.orm import sessionmaker
-from contextlib import contextmanager
 from flask_marshmallow import Marshmallow
-from flask.ext.bcrypt import Bcrypt
+from flask_bcrypt import Bcrypt
+from config import DATABASE_URI
+from flask_migrate import Migrate
+from worker import worker
+from user import user
+from product import product
+from order import order
+from productDemand import productDemand
 
 app = Flask(__name__)
+
+db = SQLAlchemy()
+engine = create_engine(DATABASE_URI)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:kurylo13@localhost:5432/pharmacy'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+ma = Marshmallow(engine)
+Session = sessionmaker(bind=engine)
+bcrypt = Bcrypt(app)
+migrate = Migrate(app, db)
+app.register_blueprint(worker)
+app.register_blueprint(user)
+app.register_blueprint(product)
+app.register_blueprint(order)
+app.register_blueprint(productDemand)
 
 @app.route('/')
 def hello_world():
@@ -16,28 +35,9 @@ def hello_world():
 
 
 
-db = SQLAlchemy(app)
-engine = create_engine(DATABASE_URI)
-ma = Marshmallow(engine)
-Session = sessionmaker(bind=engine)
-s = Session()
-bcrypt = flask.ext.bcrypt.Bcrypt(app)
-
-@app.route('/worker', methods=['POST'])
-def addWorker():
-    name = request.json['name']
-    login = request.json['login']
-    password = request.json['password']
-    pw_hash = bcrypt.generate_password_hash(password)
-    role = request.json['role']
-
-    new_worker = Worker(name, login, pw_hash, role)
-    db.session.add(new_worker)
-    db.session.comit()
-
-    return Worker.jsonify(new_worker)
 if __name__ == '__main__':
-    app.run()
+    app.run(debung=True)
+
 
 
 #alembic stamp head
