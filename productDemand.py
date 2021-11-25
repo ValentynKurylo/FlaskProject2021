@@ -7,6 +7,8 @@ from config import DATABASE_URI
 from validation import ProductDemandSchema
 from sqlalchemy import create_engine
 from models import ProductDemand, User, Product
+from user import token_required_user
+
 
 productDemand = Blueprint('productDemand', __name__)
 bcrypt = Bcrypt()
@@ -17,7 +19,10 @@ session = Session()
 
 
 @productDemand.route('/productDemands/', methods=['POST'])
-def creatingOrder():
+@token_required_user
+def creatingOrder(current_user):
+    if not  current_user.role == 'admin' or current_user.role == 'user':
+        return jsonify({'message': 'This is only for workers'})
     data = request.get_json(force=True)
     try:
         ProductDemandSchema().load(data)
@@ -38,7 +43,10 @@ def creatingOrder():
 
 
 @productDemand.route('/productDemands/<id>', methods=['GET'])
-def getWorkerById(id):
+@token_required_user
+def getWorkerById(current_user, id):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(ProductDemand).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="id doesn't exist")
@@ -46,7 +54,10 @@ def getWorkerById(id):
     return jsonify({'user': biblethump})
 
 @productDemand.route('/productDemandsUser/<user_id>', methods=['GET'])
-def getWorkerByIdUser(user_id):
+@token_required_user
+def getWorkerByIdUser(current_user, user_id):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(ProductDemand).filter_by(user_id=user_id).first()
     if not id:
         return Response(status=404, response="id doesn't exist")
@@ -54,7 +65,10 @@ def getWorkerByIdUser(user_id):
     return jsonify({'user': biblethump})
 
 @productDemand.route('/productDemands', methods=['GET'])
-def getWorkers():
+@token_required_user
+def getWorkers(current_user):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
     limbo = session.query(ProductDemand)
     quer = [ProductDemandSchema().dump(i) for i in limbo]
     if not quer:
@@ -66,7 +80,10 @@ def getWorkers():
 
 
 @productDemand.route('/productDemandsProduct/<product_id>', methods=['GET'])
-def getWorkerByIdProduct(product_id):
+@token_required_user
+def getWorkerByIdProduct(current_user, product_id):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(ProductDemand).filter_by(product_id=product_id).first()
     if not id:
         return Response(status=404, response="id doesn't exist")
@@ -77,7 +94,10 @@ def getWorkerByIdProduct(product_id):
 
 
 @productDemand.route('/productDemands/<id>', methods=['DELETE'])
-def deleteUser(id):
+@token_required_user
+def deleteUser(current_user, id):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(ProductDemand).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="ID doesn't exist")

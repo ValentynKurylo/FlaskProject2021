@@ -13,6 +13,7 @@ from product import product
 from order import order
 from productDemand import productDemand
 
+
 app = Flask(__name__)
 
 db = SQLAlchemy()
@@ -28,6 +29,8 @@ app.register_blueprint(user)
 app.register_blueprint(product)
 app.register_blueprint(order)
 app.register_blueprint(productDemand)
+app.register_blueprint(productDemand)
+
 
 @app.route('/')
 def hello_world():

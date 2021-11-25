@@ -7,6 +7,7 @@ from config import DATABASE_URI
 from validation import OrderSchema
 from sqlalchemy import create_engine
 from models import Order, User, Product
+from user import token_required_user
 
 order = Blueprint('order', __name__)
 bcrypt = Bcrypt()
@@ -17,7 +18,10 @@ session = Session()
 
 
 @order.route('/orders/', methods=['POST'])
-def creatingOrder():
+@token_required_user
+def creatingOrder(current_user):
+    if not current_user.role == 'user':
+        return jsonify({'message': 'This is only for workers'})
     data = request.get_json(force=True)
     try:
         OrderSchema().load(data)
@@ -38,7 +42,10 @@ def creatingOrder():
 
 
 @order.route('/orders/<id>', methods=['GET'])
-def getWorkerById(id):
+@token_required_user
+def getWorkerById(current_worker,  id):
+    if not current_worker.role == 'worker' or current_worker.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(Order).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="id doesn't exist")
@@ -47,7 +54,10 @@ def getWorkerById(id):
 
 
 @order.route('/orders', methods=['GET'])
-def getWorkers():
+@token_required_user
+def getWorkers(current_user):
+    if not current_user.role == 'worker' or current_user.role == 'admin' or current_user.role == 'user':
+        return jsonify({'message': 'This is only for workers'})
     limbo = session.query(Order)
     quer = [OrderSchema().dump(i) for i in limbo]
     if not quer:
@@ -59,9 +69,11 @@ def getWorkers():
 
 
 
-
 @order.route('/orders/<id>', methods=['DELETE'])
-def deleteUser(id):
+@token_required_user
+def deleteUser(current_user, id):
+    if not current_user.role == 'admin' or current_user.role == 'user':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(Order).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="ID doesn't exist")

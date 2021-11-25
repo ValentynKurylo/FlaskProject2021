@@ -7,6 +7,7 @@ from config import DATABASE_URI
 from validation import ProductSchema
 from sqlalchemy import create_engine
 from models import Product
+from user import token_required_user
 
 product = Blueprint('product', __name__)
 bcrypt = Bcrypt()
@@ -17,7 +18,11 @@ session = Session()
 
 
 @product.route('/products/', methods=['POST'])
-def creatingProduct():
+@token_required_user
+def creatingProduct(current_user):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
+
     data = request.get_json(force=True)
     try:
         ProductSchema().load(data)
@@ -63,7 +68,11 @@ def getWorkers():
 
 
 @product.route('/products/<id>', methods=['PUT'])
-def updateWorker(id):
+@token_required_user
+def updateWorker(current_user, id):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
+
     data = request.get_json(force=True)
     try:
         ProductSchema().load(data)
@@ -91,7 +100,11 @@ def updateWorker(id):
 
 
 @product.route('/products/<id>', methods=['PATCH'])
-def updateWorker(id):
+@token_required_user
+def patchProduct(current_user, id):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
+
     data = request.get_json(force=True)
     try:
         ProductSchema().load(data)
@@ -118,7 +131,10 @@ def updateWorker(id):
     return Response(response="Product successfully updated")
 
 @product.route('/products/<id>', methods=['DELETE'])
-def deleteUser(id):
+@token_required_user
+def deleteUser(current_user, id):
+    if not current_user.role == 'worker' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(Product).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="ID doesn't exist")

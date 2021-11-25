@@ -1,9 +1,13 @@
-from flask import Blueprint, request, jsonify, Response
+import datetime
+import jwt
+from flask import Blueprint, request, jsonify, Response, make_response
 from flask_bcrypt import Bcrypt
 from marshmallow import ValidationError
 from sqlalchemy.orm import sessionmaker
+from werkzeug.security import check_password_hash, generate_password_hash
+from functools import wraps
 
-from config import DATABASE_URI
+from config import DATABASE_URI, SECRET_KEY
 from validation import UserSchema
 from sqlalchemy import create_engine
 from models import User, Product
@@ -14,6 +18,25 @@ engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 
 session = Session()
+
+def token_required_user(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+
+        if not token:
+            return jsonify({'message': 'token is missing'}), 401
+        try:
+            data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            current_user = session.query(User).filter_by(id=data['public_id']).first()
+        except:
+            return jsonify({'message': 'token is not valid!'}), 401
+
+        return f(current_user, *args, **kwargs)
+    return decorated
 
 
 @user.route('/users/', methods=['POST'])
@@ -28,7 +51,7 @@ def creatingUser():
     exist = session.query(User).filter_by(login=data['login']).first()
     if exist:
         return Response(status=400, response="Email already exists")
-    hashpassword = bcrypt.generate_password_hash(data['password'])
+    hashpassword = generate_password_hash(data['password'])
     users = User(name=data['name'], login=data['login'], password=hashpassword, role=data['role'])
     session.add(users)
     session.commit()
@@ -37,7 +60,7 @@ def creatingUser():
 
 
 @user.route('/users/<id>', methods=['GET'])
-def getUserById(id):
+def getUserById(current_user, id):
     id = session.query(User).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="id doesn't exist")
@@ -58,7 +81,12 @@ def getUsers():
 
 
 @user.route('/users/<id>', methods=['PUT'])
-def updateUser(id):
+@token_required_user
+def updateUser(current_user, id):
+    if not current_user.role == 'user' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for users'})
+    if 500:
+        return jsonify({'message': 'This is only for workers'})
     data = request.get_json(force=True)
     try:
         UserSchema().load(data)
@@ -90,7 +118,13 @@ def updateUser(id):
 
 
 @user.route('/users/<id>', methods=['PATCH'])
-def updateUser(id):
+@token_required_user
+def patchUser(current_user, id):
+    if not current_user.role == 'user' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for users'})
+    if 500:
+        return jsonify({'message': 'This is only for workers'})
+
     data = request.get_json(force=True)
     try:
         UserSchema().load(data)
@@ -121,7 +155,13 @@ def updateUser(id):
     return Response(response="User successfully updated")
 
 @user.route('/users/<id>', methods=['DELETE'])
-def deleteUser(id):
+@token_required_user
+def deleteUser(current_user, id):
+    if not current_user.role == 'user' or current_user.role == 'admin':
+        return jsonify({'message': 'This is only for users'})
+    if 500:
+        return jsonify({'message': 'This is only for workers'})
+
     id = session.query(User).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="ID doesn't exist")
@@ -133,3 +173,21 @@ def deleteUser(id):
     session.close()
     return Response(response="Worker successfully deleted")
 
+
+
+@user.route('/users/login', methods=['GET'])
+def loginUser():
+    auth = request.authorization
+    if not auth or not auth.username or not auth.password:
+        return make_response('Could not verify', 401)
+
+    user = session.query(User).filter_by(login=auth.username).first()
+
+    if not user:
+        return make_response('Not user', 401)
+
+    if user:
+        token = jwt.encode({'public_id': user.id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, SECRET_KEY)
+        return jsonify({'token': token})
+
+    return make_response('problem', 401)
