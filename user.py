@@ -6,6 +6,7 @@ from marshmallow import ValidationError
 from sqlalchemy.orm import sessionmaker
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
+from flask_httpauth import HTTPBasicAuth
 
 from config import DATABASE_URI, SECRET_KEY
 from validation import UserSchema
@@ -18,6 +19,8 @@ engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 
 session = Session()
+
+
 
 def token_required_user(f):
     @wraps(f)
@@ -183,11 +186,14 @@ def loginUser():
 
     user = session.query(User).filter_by(login=auth.username).first()
 
-    if not user:
-        return make_response('Not user', 401)
+    if not check_password_hash(user.password, auth.password):
+        return make_response('Wrong password', 401)
 
     if user:
         token = jwt.encode({'public_id': user.id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, SECRET_KEY)
         return jsonify({'token': token})
 
     return make_response('problem', 401)
+
+
+
