@@ -164,6 +164,22 @@ class ApiTest(TestingBase):
         self.session.query(User).filter_by(name='rassel').delete()
         self.session.commit()
 
+
+    def test_Delete_Product_by_Id(self):
+        hashpassword = bcrypt.generate_password_hash('12345678')
+        user = User(name="rassel", login="tomato@gmail.com", password=hashpassword, role="worker")
+        drug = Product(name="aspiryn", price=10, number=5)
+        self.session.add(drug)
+        self.session.add(user)
+        self.session.commit()
+        creds = b64encode(b"tomato@gmail.com:12345678").decode("utf-8")
+        response = self.tester.delete('/products/1', headers={"Authorization": f"Basic {creds}"})
+        code = response.status_code
+        self.assertEqual(401, code)
+        self.session.delete(user)
+        self.session.commit()
+
+
     def test_Create_Product_Invalid(self):
         hashpassword = bcrypt.generate_password_hash('12345678')
         user = User(name="rassel", login="tomato@gmail.com", password=hashpassword, role="user")
@@ -193,7 +209,7 @@ class ApiTest(TestingBase):
         self.session.delete(user)
         self.session.commit()
 
-    def test_Delete_Product_by_Id_Invalid(self):
+    def test_Delete_Product_by_Id_Invali(self):
         hashpassword = bcrypt.generate_password_hash('12345678')
         user = User(name="rassel", login="tomato@gmail.com", password=hashpassword, role="worker")
         drug = Product(name="aspiryn", price=10, number=5)
