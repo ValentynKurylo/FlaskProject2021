@@ -63,7 +63,10 @@ def creatingUser():
 
 
 @user.route('/users/<id>', methods=['GET'])
+#@token_required_user
 def getUserById(current_user, id):
+    if not current_user.role == 'user':
+        return jsonify({'message': 'This is only for workers'})
     id = session.query(User).filter_by(id=id).first()
     if not id:
         return Response(status=404, response="id doesn't exist")
@@ -88,8 +91,6 @@ def getUsers():
 def updateUser(current_user, id):
     if not current_user.role == 'user' or current_user.role == 'admin':
         return jsonify({'message': 'This is only for users'})
-    if 500:
-        return jsonify({'message': 'This is only for workers'})
     data = request.get_json(force=True)
     try:
         UserSchema().load(data)
@@ -125,8 +126,6 @@ def updateUser(current_user, id):
 def patchUser(current_user, id):
     if not current_user.role == 'user' or current_user.role == 'admin':
         return jsonify({'message': 'This is only for users'})
-    if 500:
-        return jsonify({'message': 'This is only for workers'})
 
     data = request.get_json(force=True)
     try:
@@ -162,8 +161,6 @@ def patchUser(current_user, id):
 def deleteUser(current_user, id):
     if not current_user.role == 'user' or current_user.role == 'admin':
         return jsonify({'message': 'This is only for users'})
-    if 500:
-        return jsonify({'message': 'This is only for workers'})
 
     id = session.query(User).filter_by(id=id).first()
     if not id:

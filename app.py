@@ -29,7 +29,7 @@ app.register_blueprint(user)
 app.register_blueprint(product)
 app.register_blueprint(order)
 app.register_blueprint(productDemand)
-app.register_blueprint(productDemand)
+
 
 
 @app.route('/')

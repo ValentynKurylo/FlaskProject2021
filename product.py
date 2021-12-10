@@ -18,7 +18,7 @@ session = Session()
 
 
 @product.route('/products/', methods=['POST'])
-@token_required_user
+#@token_required_user
 def creatingProduct(current_user):
     if not current_user.role == 'worker' or current_user.role == 'admin':
         return jsonify({'message': 'This is only for workers'})

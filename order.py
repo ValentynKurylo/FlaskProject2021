@@ -21,7 +21,7 @@ session = Session()
 @token_required_user
 def creatingOrder(current_user):
     if not current_user.role == 'user':
-        return jsonify({'message': 'This is only for workers'})
+        return jsonify({'message': 'This is only for users'})
     data = request.get_json(force=True)
     try:
         OrderSchema().load(data)
